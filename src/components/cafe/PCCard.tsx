@@ -7,7 +7,7 @@ export interface PC {
   id: string;
   name: string;
   status: PCStatus;
-  remainingMinutes: number | null;
+  endTime: Date | null;
 }
 
 interface Props {
@@ -20,11 +20,13 @@ interface Props {
   onWake?: (pc: PC) => void;
 }
 
-function formatTime(mins: number | null) {
-  if (mins == null) return "--";
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h > 0 ? `${h}h ${m.toString().padStart(2, "0")}m` : `${m}m`;
+function formatEndTime(endTime: Date | null) {
+  if (!endTime) return "--";
+
+  return endTime.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function PCCard({ pc, onStart, onExtend, onEnd, onRestart, onShutdown, onWake }: Props) {
@@ -69,7 +71,7 @@ export function PCCard({ pc, onStart, onExtend, onEnd, onRestart, onShutdown, on
           Remaining
         </div>
         <div className="font-mono font-semibold text-base tabular-nums">
-          {formatTime(pc.remainingMinutes)}
+          {formatEndTime(pc.endTime)}
         </div>
       </div>
 
