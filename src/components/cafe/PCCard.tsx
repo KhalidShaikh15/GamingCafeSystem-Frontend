@@ -68,7 +68,7 @@ export function PCCard({ pc, onStart, onExtend, onEnd, onRestart, onShutdown, on
       <div className="flex items-center justify-between bg-background/40 border border-border rounded-md px-3 py-2.5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />
-          Remaining
+          End Time
         </div>
         <div className="font-mono font-semibold text-base tabular-nums">
           {formatEndTime(pc.endTime)}

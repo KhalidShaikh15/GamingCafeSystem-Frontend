@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { startSession } from "@/api/backend";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { useCallback, useEffect, useState } from "react";
+import { startSession, endSession, extendSession } from "@/api/backend";
 import { AppShell } from "@/components/layout/AppShell";
 import { PCCard, type PC } from "@/components/cafe/PCCard";
 import { StartSessionModal } from "@/components/cafe/StartSessionModal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
 import { useGamingPcs } from "@/hooks/useGamingPcs";
+import { ExtendSessionModal } from "@/components/modals/extend-session-modal";
 
 export const Route = createFileRoute("/gaming-pcs")({
   head: () => ({
@@ -51,6 +52,16 @@ function GamingPCsPage() {
   const [open, setOpen] = useState(false);
 
   const { pcs: backendPcs, loading, refresh } = useGamingPcs();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedPc, setSelectedPc] = useState<PC | null>(null);
+  const [extendOpen, setExtendOpen] = useState(false);
+  const [extendPC, setExtendPC] = useState<PC | null>(null);
+  
+
+  const openExtendModal = (pc: PC) => {
+  setExtendPC(pc);
+  setExtendOpen(true);
+};
 
   const pcs: PC[] = backendPcs
     .filter((pc) => filter === "all" || pc.status === filter)
@@ -80,6 +91,43 @@ function GamingPCsPage() {
   }
 };
 
+const handleExtendSession = async (pc: PC, minutes: number) => {
+  try {
+    await extendSession(pc.id, minutes);
+
+    console.log("Session extended successfully");
+  } catch (error) {
+    console.error("Failed to extend session", error);
+
+    alert("Failed to extend session.");
+  }
+};
+
+
+const confirmEndSession = async () => {
+  if (!selectedPc) return;
+
+  try {
+    await endSession(selectedPc.id);
+
+    console.log("Session ended successfully");
+  } catch (error) {
+    console.error("Failed to end session", error);
+
+    alert("Failed to end session.");
+  } finally {
+    setConfirmOpen(false);
+    setSelectedPc(null);
+  }
+};
+
+const handleEndSession = (pc: PC) => {
+  console.log("End button clicked", pc);
+
+  setSelectedPc(pc);
+  setConfirmOpen(true);
+
+};
 const noop = () => {};
 
   return (
@@ -129,8 +177,8 @@ const noop = () => {};
                 key={pc.id}
                 pc={pc}
                 onStart={openStartModal}
-                onExtend={noop}
-                onEnd={noop}
+                onExtend={openExtendModal}
+                onEnd={handleEndSession}
                 onRestart={noop}
                 onShutdown={noop}
                 onWake={noop}
@@ -139,6 +187,12 @@ const noop = () => {};
           </div>
         )}
       </div>
+      <ExtendSessionModal
+      pc={extendPC}
+      open={extendOpen}
+      onOpenChange={setExtendOpen}
+      onExtend={handleExtendSession}
+    />
 
       <StartSessionModal
         pc={modalPC}
@@ -146,6 +200,24 @@ const noop = () => {};
         onOpenChange={setOpen}
         onStart={handleStartSession}
       />
+      <ConfirmDialog
+  open={confirmOpen}
+  title="End Session"
+  description={
+    selectedPc
+      ? `Are you sure you want to end the session for ${selectedPc.name}?`
+      : ""
+  }
+  confirmText="End Session"
+  cancelText="Cancel"
+  onConfirm={confirmEndSession}
+  onCancel={() => {
+    setConfirmOpen(false);
+    setSelectedPc(null);
+  }}
+
+
+/>
     </AppShell>
   );
 }
