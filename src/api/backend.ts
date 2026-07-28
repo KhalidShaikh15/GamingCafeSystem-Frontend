@@ -114,3 +114,21 @@ export async function shutdownPc(pcId: string) {
 
   return response.json();
 }
+
+export async function wakePc(pcId: string) {
+  const response = await fetch(`${API_URL}/wake`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      pcId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to wake PC");
+  }
+
+  return response.json();
+}

@@ -39,6 +39,12 @@ export function PCCard({ pc, onStart, onExtend, onEnd, onRestart, onShutdown, on
     pc.status === "locked" ? "before:bg-primary" :
     pc.status === "starting" ? "before:bg-warning" :
     "before:bg-destructive";
+  const canStart = pc.status === "locked";
+  const canEnd = pc.status === "active";
+  const canExtend = pc.status === "active";
+  const canRestart = pc.status !== "offline";
+  const canShutdown = pc.status !== "offline";
+  const canWake = pc.status === "offline";
 
   return (
     <div className={cn(
@@ -78,25 +84,25 @@ export function PCCard({ pc, onStart, onExtend, onEnd, onRestart, onShutdown, on
       <div className="grid grid-cols-2 gap-2">
         {isOffline ? (
           <>
-            <Button size="sm" variant="secondary" className="col-span-2" onClick={() => onWake?.(pc)}>
+            <Button size="sm" variant="secondary" className="col-span-2" disabled={!canWake} onClick={() => onWake?.(pc)}>
               <Wifi className="h-4 w-4" /> Wake
             </Button>
           </>
         ) : (
           <>
-            <Button size="sm" disabled={isActive} onClick={() => onStart?.(pc)}>
+            <Button size="sm" disabled={!canStart} onClick={() => onStart?.(pc)}>
               <Play className="h-4 w-4" /> Start
             </Button>
-            <Button size="sm" variant="secondary" disabled={!isActive} onClick={() => onExtend?.(pc)}>
+            <Button size="sm" variant="secondary" disabled={!canExtend} onClick={() => onExtend?.(pc)}>
               <Clock className="h-4 w-4" /> Extend
             </Button>
-            <Button size="sm" variant="destructive" disabled={!isActive} onClick={() => onEnd?.(pc)}>
+            <Button size="sm" variant="destructive" disabled={!canEnd} onClick={() => onEnd?.(pc)}>
               <Square className="h-4 w-4" /> End
             </Button>
-            <Button size="sm" variant="outline" disabled={isOffline} onClick={() => onRestart?.(pc)}>
+            <Button size="sm" variant="outline" disabled={!canRestart} onClick={() => onRestart?.(pc)}>
               <RotateCw className="h-4 w-4" /> Restart
             </Button>
-            <Button size="sm" variant="outline" className="col-span-2" disabled={isOffline} onClick={() => onShutdown?.(pc)}>
+            <Button size="sm" variant="outline" className="col-span-2" disabled={!canShutdown} onClick={() => onShutdown?.(pc)}>
               <Power className="h-4 w-4" /> Shutdown
             </Button>
           </>

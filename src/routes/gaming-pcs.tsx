@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { useCallback, useEffect, useState } from "react";
-import { startSession, endSession, extendSession, restartPc, shutdownPc,} from "@/api/backend";
+import { startSession, endSession, extendSession, restartPc, shutdownPc,  wakePc,} from "@/api/backend";
 import { AppShell } from "@/components/layout/AppShell";
 import { PCCard, type PC } from "@/components/cafe/PCCard";
 import { StartSessionModal } from "@/components/cafe/StartSessionModal";
@@ -60,6 +60,8 @@ function GamingPCsPage() {
   const [restartTarget, setRestartTarget] = useState<PC | null>(null);
   const [shutdownOpen, setShutdownOpen] = useState(false);
   const [shutdownTarget, setShutdownTarget] = useState<PC | null>(null);
+  const [wakeOpen, setWakeOpen] = useState(false);
+  const [wakeTarget, setWakeTarget] = useState<PC | null>(null);
 
   const openExtendModal = (pc: PC) => {
   setExtendPC(pc);
@@ -139,6 +141,28 @@ const confirmShutdown = async () => {
   }
 };
 
+const handleWake = (pc: PC) => {
+  setWakeTarget(pc);
+  setWakeOpen(true);
+};
+
+const confirmWake = async () => {
+  if (!wakeTarget) return;
+
+  try {
+    await wakePc(wakeTarget.id);
+
+    console.log("Wake request sent successfully.");
+  } catch (error) {
+    console.error("Failed to wake PC:", error);
+
+    alert("Failed to wake PC.");
+  } finally {
+    setWakeOpen(false);
+    setWakeTarget(null);
+  }
+};
+
 const handleExtendSession = async (pc: PC, minutes: number) => {
   try {
     await extendSession(pc.id, minutes);
@@ -176,7 +200,6 @@ const handleEndSession = (pc: PC) => {
   setConfirmOpen(true);
 
 };
-const noop = () => {};
 
   return (
     <AppShell>
@@ -229,7 +252,7 @@ const noop = () => {};
                 onEnd={handleEndSession}
                 onRestart={handleRestart}
                 onShutdown={handleShutdown}
-                onWake={noop}
+                onWake={handleWake}
               />
             ))}
           </div>
@@ -296,6 +319,23 @@ const noop = () => {};
   onCancel={() => {
     setShutdownOpen(false);
     setShutdownTarget(null);
+  }}
+/>
+
+<ConfirmDialog
+  open={wakeOpen}
+  title="Wake PC"
+  description={
+    wakeTarget
+      ? `Are you sure you want to wake ${wakeTarget.name}?`
+      : ""
+  }
+  confirmText="Wake"
+  cancelText="Cancel"
+  onConfirm={confirmWake}
+  onCancel={() => {
+    setWakeOpen(false);
+    setWakeTarget(null);
   }}
 />
 
