@@ -78,3 +78,39 @@ export async function extendSession(
 
   return response.json();
 }
+
+export async function restartPc(pcId: string) {
+  const response = await fetch(`${API_URL}/restart`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      pcId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to restart PC");
+  }
+
+  return response.json();
+}
+
+export async function shutdownPc(pcId: string) {
+  const response = await fetch(`${API_URL}/shutdown`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      pcId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to shut down PC");
+  }
+
+  return response.json();
+}

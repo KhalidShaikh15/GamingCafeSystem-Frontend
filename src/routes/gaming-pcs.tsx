@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { useCallback, useEffect, useState } from "react";
-import { startSession, endSession, extendSession } from "@/api/backend";
+import { startSession, endSession, extendSession, restartPc, shutdownPc,} from "@/api/backend";
 import { AppShell } from "@/components/layout/AppShell";
 import { PCCard, type PC } from "@/components/cafe/PCCard";
 import { StartSessionModal } from "@/components/cafe/StartSessionModal";
@@ -56,7 +56,10 @@ function GamingPCsPage() {
   const [selectedPc, setSelectedPc] = useState<PC | null>(null);
   const [extendOpen, setExtendOpen] = useState(false);
   const [extendPC, setExtendPC] = useState<PC | null>(null);
-  
+  const [restartOpen, setRestartOpen] = useState(false);
+  const [restartTarget, setRestartTarget] = useState<PC | null>(null);
+  const [shutdownOpen, setShutdownOpen] = useState(false);
+  const [shutdownTarget, setShutdownTarget] = useState<PC | null>(null);
 
   const openExtendModal = (pc: PC) => {
   setExtendPC(pc);
@@ -88,6 +91,51 @@ function GamingPCsPage() {
     console.error("Failed to start session", error);
 
     alert("Failed to start session.");
+  }
+};
+
+const handleRestart = (pc: PC) => {
+  setRestartTarget(pc);
+  setRestartOpen(true);
+};
+
+
+const confirmRestart = async () => {
+  if (!restartTarget) return;
+
+  try {
+    await restartPc(restartTarget.id);
+
+    console.log("Restart request sent successfully.");
+  } catch (error) {
+    console.error("Failed to restart PC:", error);
+
+    alert("Failed to restart PC.");
+  } finally {
+    setRestartOpen(false);
+    setRestartTarget(null);
+  }
+};
+
+const handleShutdown = (pc: PC) => {
+  setShutdownTarget(pc);
+  setShutdownOpen(true);
+};
+
+const confirmShutdown = async () => {
+  if (!shutdownTarget) return;
+
+  try {
+    await shutdownPc(shutdownTarget.id);
+
+    console.log("Shutdown request sent successfully.");
+  } catch (error) {
+    console.error("Failed to shut down PC:", error);
+
+    alert("Failed to shut down PC.");
+  } finally {
+    setShutdownOpen(false);
+    setShutdownTarget(null);
   }
 };
 
@@ -179,8 +227,8 @@ const noop = () => {};
                 onStart={openStartModal}
                 onExtend={openExtendModal}
                 onEnd={handleEndSession}
-                onRestart={noop}
-                onShutdown={noop}
+                onRestart={handleRestart}
+                onShutdown={handleShutdown}
                 onWake={noop}
               />
             ))}
@@ -216,8 +264,42 @@ const noop = () => {};
     setSelectedPc(null);
   }}
 
-
 />
+<ConfirmDialog
+  open={restartOpen}
+  title="Restart PC"
+  description={
+    restartTarget
+      ? `Are you sure you want to restart ${restartTarget.name}? This will immediately restart the computer.`
+      : ""
+  }
+  confirmText="Restart"
+  cancelText="Cancel"
+  onConfirm={confirmRestart}
+  onCancel={() => {
+    setRestartOpen(false);
+    setRestartTarget(null);
+  }}
+/>
+
+<ConfirmDialog
+  open={shutdownOpen}
+  title="Shutdown PC"
+  description={
+    shutdownTarget
+      ? `Are you sure you want to shut down ${shutdownTarget.name}? This will immediately power off the computer.`
+      : ""
+  }
+  confirmText="Shutdown"
+  cancelText="Cancel"
+  onConfirm={confirmShutdown}
+  onCancel={() => {
+    setShutdownOpen(false);
+    setShutdownTarget(null);
+  }}
+/>
+
+
     </AppShell>
   );
 }
