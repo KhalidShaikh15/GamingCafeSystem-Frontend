@@ -10,15 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SessionsRouteImport } from './routes/sessions'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as GamingPcsRouteImport } from './routes/gaming-pcs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as BillingRouteImport } from './routes/billing'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ManagementIndexRouteImport } from './routes/management/index'
+import { Route as ManagementPricingRouteImport } from './routes/management/pricing'
+import { Route as ManagementLayoutRouteImport } from './routes/management/_layout'
 
 const SessionsRoute = SessionsRouteImport.update({
   id: '/sessions',
   path: '/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogsRoute = LogsRouteImport.update({
@@ -36,6 +46,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BillingRoute = BillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -46,55 +61,114 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementIndexRoute = ManagementIndexRouteImport.update({
+  id: '/management/',
+  path: '/management/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagementPricingRoute = ManagementPricingRouteImport.update({
+  id: '/management/pricing',
+  path: '/management/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagementLayoutRoute = ManagementLayoutRouteImport.update({
+  id: '/management/_layout',
+  path: '/management',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
   '/gaming-pcs': typeof GamingPcsRoute
   '/logs': typeof LogsRoute
+  '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
+  '/management': typeof ManagementLayoutRoute
+  '/management/pricing': typeof ManagementPricingRoute
+  '/management/': typeof ManagementIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
   '/gaming-pcs': typeof GamingPcsRoute
   '/logs': typeof LogsRoute
+  '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
+  '/management': typeof ManagementIndexRoute
+  '/management/pricing': typeof ManagementPricingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
   '/gaming-pcs': typeof GamingPcsRoute
   '/logs': typeof LogsRoute
+  '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
+  '/management/_layout': typeof ManagementLayoutRoute
+  '/management/pricing': typeof ManagementPricingRoute
+  '/management/': typeof ManagementIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/about' | '/dashboard' | '/gaming-pcs' | '/logs' | '/sessions'
+    | '/'
+    | '/about'
+    | '/billing'
+    | '/dashboard'
+    | '/gaming-pcs'
+    | '/logs'
+    | '/reports'
+    | '/sessions'
+    | '/management'
+    | '/management/pricing'
+    | '/management/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/dashboard' | '/gaming-pcs' | '/logs' | '/sessions'
+  to:
+    | '/'
+    | '/about'
+    | '/billing'
+    | '/dashboard'
+    | '/gaming-pcs'
+    | '/logs'
+    | '/reports'
+    | '/sessions'
+    | '/management'
+    | '/management/pricing'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/billing'
     | '/dashboard'
     | '/gaming-pcs'
     | '/logs'
+    | '/reports'
     | '/sessions'
+    | '/management/_layout'
+    | '/management/pricing'
+    | '/management/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  BillingRoute: typeof BillingRoute
   DashboardRoute: typeof DashboardRoute
   GamingPcsRoute: typeof GamingPcsRoute
   LogsRoute: typeof LogsRoute
+  ReportsRoute: typeof ReportsRoute
   SessionsRoute: typeof SessionsRoute
+  ManagementLayoutRoute: typeof ManagementLayoutRoute
+  ManagementPricingRoute: typeof ManagementPricingRoute
+  ManagementIndexRoute: typeof ManagementIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -104,6 +178,13 @@ declare module '@tanstack/react-router' {
       path: '/sessions'
       fullPath: '/sessions'
       preLoaderRoute: typeof SessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logs': {
@@ -127,6 +208,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/billing': {
+      id: '/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -141,16 +229,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management/': {
+      id: '/management/'
+      path: '/management'
+      fullPath: '/management/'
+      preLoaderRoute: typeof ManagementIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management/pricing': {
+      id: '/management/pricing'
+      path: '/management/pricing'
+      fullPath: '/management/pricing'
+      preLoaderRoute: typeof ManagementPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management/_layout': {
+      id: '/management/_layout'
+      path: '/management'
+      fullPath: '/management'
+      preLoaderRoute: typeof ManagementLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  BillingRoute: BillingRoute,
   DashboardRoute: DashboardRoute,
   GamingPcsRoute: GamingPcsRoute,
   LogsRoute: LogsRoute,
+  ReportsRoute: ReportsRoute,
   SessionsRoute: SessionsRoute,
+  ManagementLayoutRoute: ManagementLayoutRoute,
+  ManagementPricingRoute: ManagementPricingRoute,
+  ManagementIndexRoute: ManagementIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

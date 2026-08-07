@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { collectPayment } from "@/api/api";
 import type { PendingPayment } from "@/api/api";
 
 interface PendingPaymentsProps {
@@ -13,6 +14,24 @@ export function PendingPayments({
   if (payments.length === 0) {
     return null;
   }
+
+  const handleCollectPayment = async (sessionId: number) => {
+
+    try {
+
+      await collectPayment(sessionId);
+
+      console.log("Payment collected.");
+
+    } catch (error) {
+
+      console.error("Failed to collect payment", error);
+
+      alert("Failed to collect payment.");
+
+    }
+
+  };
 
   return (
     <Card>
@@ -46,7 +65,9 @@ export function PendingPayments({
               </p>
             </div>
 
-            <Button>
+            <Button
+              onClick={() => handleCollectPayment(payment.id)}
+            >
               Collect Payment
             </Button>
 

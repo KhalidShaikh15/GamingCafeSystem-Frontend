@@ -155,3 +155,73 @@ export async function getPendingPayments(): Promise<PendingPayment[]> {
   return response.json();
 
 }
+
+export async function collectPayment(sessionId: number) {
+
+  const response = await fetch(`${API_URL}/collect-payment`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sessionId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to collect payment");
+  }
+
+  return response.json();
+
+}
+
+export interface Settings {
+
+  id: number;
+
+  cafeName: string;
+
+  billingType: "PER_MINUTE" | "PER_HOUR";
+
+  gamingRate: number;
+
+  currency: string;
+
+}
+
+export async function getSettings(): Promise<Settings> {
+
+  const response = await fetch(`${API_URL}/settings`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch settings");
+  }
+
+  return response.json();
+
+}
+
+export async function updateSettings(
+  settings: Omit<Settings, "id">
+) {
+
+  const response = await fetch(`${API_URL}/settings`, {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    body: JSON.stringify(settings),
+
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save settings");
+  }
+
+  return response.json();
+
+}
