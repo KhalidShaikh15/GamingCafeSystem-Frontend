@@ -132,3 +132,26 @@ export async function wakePc(pcId: string) {
 
   return response.json();
 }
+
+export interface PendingPayment {
+  id: number;
+  pcId: string;
+  startTime: string;
+  endTime: string | null;
+  plannedMinutes: number;
+  actualMinutes: number | null;
+  gamingCharge: number;
+  status: string;
+}
+
+export async function getPendingPayments(): Promise<PendingPayment[]> {
+
+  const response = await fetch(`${API_URL}/pending-payments`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch pending payments");
+  }
+
+  return response.json();
+
+}

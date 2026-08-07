@@ -1,10 +1,17 @@
+type PcsUpdatedCallback = () => void;
+
 let socket: WebSocket | null = null;
 
+const listeners = new Set<PcsUpdatedCallback>();
+
 export function connectDashboardSocket(
-  onPcsUpdated: () => void
+  callback: PcsUpdatedCallback
 ) {
-  // Reuse existing connection
-  if (socket && socket.readyState === WebSocket.OPEN) {
+  // Register the callback
+  listeners.add(callback);
+
+  // Reuse the existing socket
+  if (socket) {
     return socket;
   }
 
@@ -26,14 +33,27 @@ export function connectDashboardSocket(
     console.log("Received:", data);
 
     if (data.Type === "PCS_UPDATED") {
-      onPcsUpdated();
+
+      listeners.forEach(listener => listener());
+
     }
   };
 
   socket.onclose = () => {
+
     console.log("Dashboard WebSocket Closed");
+
     socket = null;
+
   };
 
   return socket;
+}
+
+export function disconnectDashboardSocket(
+  callback: PcsUpdatedCallback
+) {
+
+  listeners.delete(callback);
+
 }

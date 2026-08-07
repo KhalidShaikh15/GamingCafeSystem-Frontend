@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { useCallback, useEffect, useState } from "react";
-import { startSession, endSession, extendSession, restartPc, shutdownPc,  wakePc,} from "@/api/backend";
+import { startSession, endSession, extendSession, restartPc, shutdownPc,  wakePc,} from "@/api/api";
 import { AppShell } from "@/components/layout/AppShell";
 import { PCCard, type PC } from "@/components/cafe/PCCard";
 import { StartSessionModal } from "@/components/cafe/StartSessionModal";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGamingPcs } from "@/hooks/useGamingPcs";
 import { ExtendSessionModal } from "@/components/modals/extend-session-modal";
+import { usePendingPayments } from "@/hooks/usePendingPayments";  
+import { PendingPayments } from "@/components/cafe/PendingPayments";
 
 export const Route = createFileRoute("/gaming-pcs")({
   head: () => ({
@@ -52,10 +54,15 @@ function GamingPCsPage() {
   const [open, setOpen] = useState(false);
 
   const { pcs: backendPcs, loading, refresh } = useGamingPcs();
+  const {
+  payments,
+  loading: paymentsLoading,
+  refresh: refreshPayments,
+} = usePendingPayments();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedPc, setSelectedPc] = useState<PC | null>(null);
   const [extendOpen, setExtendOpen] = useState(false);
-  const [extendPC, setExtendPC] = useState<PC | null>(null);
+  const [extendPC, setExtendPC] = useState<PC | null>(null);  
   const [restartOpen, setRestartOpen] = useState(false);
   const [restartTarget, setRestartTarget] = useState<PC | null>(null);
   const [shutdownOpen, setShutdownOpen] = useState(false);
@@ -202,144 +209,150 @@ const handleEndSession = (pc: PC) => {
 };
 
   return (
-    <AppShell>
-      <div className="space-y-6 max-w-[1400px] mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-1.5 p-1 rounded-lg bg-secondary border border-border">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                  filter === f.key
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+      <AppShell>
+        <div className="space-y-6 max-w-[1400px] mx-auto">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-1.5 p-1 rounded-lg bg-secondary border border-border">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    filter === f.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refresh}
               >
-                {f.label}
-              </button>
-            ))}
+                Refresh
+              </Button>
+
+              <Button size="sm">
+                Broadcast Message
+              </Button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refresh}
-            >
-              Refresh
-            </Button>
+          {loading ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Loading PCs...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {pcs.map((pc) => (
+                <PCCard
+                  key={pc.id}
+                  pc={pc}
+                  onStart={openStartModal}
+                  onExtend={openExtendModal}
+                  onEnd={handleEndSession}
+                  onRestart={handleRestart}
+                  onShutdown={handleShutdown}
+                  onWake={handleWake}
+                />
+              ))}
+            </div>
+          )}
+<PendingPayments
+          payments={payments}
+        />
+        <ExtendSessionModal 
+        pc={extendPC}
+        open={extendOpen}
+        onOpenChange={setExtendOpen}
+        onExtend={handleExtendSession}
+      />
 
-            <Button size="sm">
-              Broadcast Message
-            </Button>
-          </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-10 text-muted-foreground">
-            Loading PCs...
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {pcs.map((pc) => (
-              <PCCard
-                key={pc.id}
-                pc={pc}
-                onStart={openStartModal}
-                onExtend={openExtendModal}
-                onEnd={handleEndSession}
-                onRestart={handleRestart}
-                onShutdown={handleShutdown}
-                onWake={handleWake}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <ExtendSessionModal
-      pc={extendPC}
-      open={extendOpen}
-      onOpenChange={setExtendOpen}
-      onExtend={handleExtendSession}
-    />
 
-      <StartSessionModal
-        pc={modalPC}
-        open={open}
-        onOpenChange={setOpen}
-        onStart={handleStartSession}
-      />
-      <ConfirmDialog
-  open={confirmOpen}
-  title="End Session"
-  description={
-    selectedPc
-      ? `Are you sure you want to end the session for ${selectedPc.name}?`
-      : ""
+
+        <StartSessionModal
+          pc={modalPC}
+          open={open}
+          onOpenChange={setOpen}
+          onStart={handleStartSession}
+        />
+        <ConfirmDialog
+    open={confirmOpen}
+    title="End Session"
+    description={
+      selectedPc
+        ? `Are you sure you want to end the session for ${selectedPc.name}?`
+        : ""
+    }
+    confirmText="End Session"
+    cancelText="Cancel"
+    onConfirm={confirmEndSession}
+    onCancel={() => {
+      setConfirmOpen(false);
+      setSelectedPc(null);
+    }}
+
+  />
+  <ConfirmDialog
+    open={restartOpen}
+    title="Restart PC"
+    description={
+      restartTarget
+        ? `Are you sure you want to restart ${restartTarget.name}? This will immediately restart the computer.`
+        : ""
+    }
+    confirmText="Restart"
+    cancelText="Cancel"
+    onConfirm={confirmRestart}
+    onCancel={() => {
+      setRestartOpen(false);
+      setRestartTarget(null);
+    }}
+  />
+
+  <ConfirmDialog
+    open={shutdownOpen}
+    title="Shutdown PC"
+    description={
+      shutdownTarget
+        ? `Are you sure you want to shut down ${shutdownTarget.name}? This will immediately power off the computer.`
+        : ""
+    }
+    confirmText="Shutdown"
+    cancelText="Cancel"
+    onConfirm={confirmShutdown}
+    onCancel={() => {
+      setShutdownOpen(false);
+      setShutdownTarget(null);
+    }}
+  />
+
+  <ConfirmDialog
+    open={wakeOpen}
+    title="Wake PC"
+    description={
+      wakeTarget
+        ? `Are you sure you want to wake ${wakeTarget.name}?`
+        : ""
+    }
+    confirmText="Wake"
+    cancelText="Cancel"
+    onConfirm={confirmWake}
+    onCancel={() => {
+      setWakeOpen(false);
+      setWakeTarget(null);
+    }}
+  />
+
+
+      </AppShell>
+    );
   }
-  confirmText="End Session"
-  cancelText="Cancel"
-  onConfirm={confirmEndSession}
-  onCancel={() => {
-    setConfirmOpen(false);
-    setSelectedPc(null);
-  }}
-
-/>
-<ConfirmDialog
-  open={restartOpen}
-  title="Restart PC"
-  description={
-    restartTarget
-      ? `Are you sure you want to restart ${restartTarget.name}? This will immediately restart the computer.`
-      : ""
-  }
-  confirmText="Restart"
-  cancelText="Cancel"
-  onConfirm={confirmRestart}
-  onCancel={() => {
-    setRestartOpen(false);
-    setRestartTarget(null);
-  }}
-/>
-
-<ConfirmDialog
-  open={shutdownOpen}
-  title="Shutdown PC"
-  description={
-    shutdownTarget
-      ? `Are you sure you want to shut down ${shutdownTarget.name}? This will immediately power off the computer.`
-      : ""
-  }
-  confirmText="Shutdown"
-  cancelText="Cancel"
-  onConfirm={confirmShutdown}
-  onCancel={() => {
-    setShutdownOpen(false);
-    setShutdownTarget(null);
-  }}
-/>
-
-<ConfirmDialog
-  open={wakeOpen}
-  title="Wake PC"
-  description={
-    wakeTarget
-      ? `Are you sure you want to wake ${wakeTarget.name}?`
-      : ""
-  }
-  confirmText="Wake"
-  cancelText="Cancel"
-  onConfirm={confirmWake}
-  onCancel={() => {
-    setWakeOpen(false);
-    setWakeTarget(null);
-  }}
-/>
-
-
-    </AppShell>
-  );
-}
