@@ -1,16 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
-import { useCallback, useEffect, useState } from "react";
-import { startSession, endSession, extendSession, restartPc, shutdownPc,  wakePc,} from "@/api/api";
 import { AppShell } from "@/components/layout/AppShell";
 import { PCCard, type PC } from "@/components/cafe/PCCard";
 import { StartSessionModal } from "@/components/cafe/StartSessionModal";
+import { ExtendSessionModal } from "@/components/modals/extend-session-modal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+import {
+  startSession,
+  endSession,
+  extendSession,
+  restartPc,
+  shutdownPc,
+  wakePc,
+} from "@/api/api";
+
 import { useGamingPcs } from "@/hooks/useGamingPcs";
-import { ExtendSessionModal } from "@/components/modals/extend-session-modal";
-import { usePendingPayments } from "@/hooks/usePendingPayments";  
-import { PendingPayments } from "@/components/cafe/PendingPayments";
 
 export const Route = createFileRoute("/gaming-pcs")({
   head: () => ({
@@ -36,16 +44,6 @@ const FILTERS = [
   { key: "offline", label: "Offline" },
 ] as const;
 
-function getRemainingMinutes(endTime: string | null): number | null {
-  if (!endTime) return null;
-
-  const diff = new Date(endTime).getTime() - Date.now();
-
-  if (diff <= 0) return 0;
-
-  return Math.ceil(diff / 60000);
-}
-
 function GamingPCsPage() {
   const [filter, setFilter] =
     useState<(typeof FILTERS)[number]["key"]>("all");
@@ -53,35 +51,40 @@ function GamingPCsPage() {
   const [modalPC, setModalPC] = useState<PC | null>(null);
   const [open, setOpen] = useState(false);
 
-  const { pcs: backendPcs, loading, refresh } = useGamingPcs();
   const {
-  payments,
-  loading: paymentsLoading,
-  refresh: refreshPayments,
-} = usePendingPayments();
+    pcs: backendPcs,
+    loading,
+    refresh,
+  } = useGamingPcs();
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedPc, setSelectedPc] = useState<PC | null>(null);
+
   const [extendOpen, setExtendOpen] = useState(false);
-  const [extendPC, setExtendPC] = useState<PC | null>(null);  
+  const [extendPC, setExtendPC] = useState<PC | null>(null);
+
   const [restartOpen, setRestartOpen] = useState(false);
   const [restartTarget, setRestartTarget] = useState<PC | null>(null);
+
   const [shutdownOpen, setShutdownOpen] = useState(false);
   const [shutdownTarget, setShutdownTarget] = useState<PC | null>(null);
+
   const [wakeOpen, setWakeOpen] = useState(false);
   const [wakeTarget, setWakeTarget] = useState<PC | null>(null);
 
-  const openExtendModal = (pc: PC) => {
-  setExtendPC(pc);
-  setExtendOpen(true);
-};
-
   const pcs: PC[] = backendPcs
-    .filter((pc) => filter === "all" || pc.status === filter)
+    .filter(
+      (pc) =>
+        filter === "all" ||
+        pc.status === filter
+    )
     .map((pc) => ({
       id: pc.pcId,
       name: pc.pcId,
       status: pc.status,
-      endTime: pc.endTime ? new Date(pc.endTime) : null,// We'll replace this with endTime in the next step
+      endTime: pc.endTime
+        ? new Date(pc.endTime)
+        : null,
     }));
 
   const openStartModal = (pc: PC) => {
@@ -89,270 +92,367 @@ function GamingPCsPage() {
     setOpen(true);
   };
 
-  const handleStartSession = async (pc: PC, minutes: number) => {
-  try {
-    await startSession(pc.id, minutes);
+  const openExtendModal = (pc: PC) => {
+    setExtendPC(pc);
+    setExtendOpen(true);
+  };
 
-    setOpen(false);
+  const handleStartSession = async (
+    pc: PC,
+    minutes: number
+  ) => {
+    try {
+      await startSession(pc.id, minutes);
 
-    console.log("Session started successfully");
-  } catch (error) {
-    console.error("Failed to start session", error);
+      setOpen(false);
 
-    alert("Failed to start session.");
-  }
-};
+      console.log(
+        "Session started successfully"
+      );
+    } catch (error) {
+      console.error(
+        "Failed to start session",
+        error
+      );
 
-const handleRestart = (pc: PC) => {
-  setRestartTarget(pc);
-  setRestartOpen(true);
-};
+      alert("Failed to start session.");
+    }
+  };
 
+  const handleExtendSession = async (
+    pc: PC,
+    minutes: number
+  ) => {
+    try {
+      await extendSession(pc.id, minutes);
 
-const confirmRestart = async () => {
-  if (!restartTarget) return;
+      setExtendOpen(false);
+      setExtendPC(null);
 
-  try {
-    await restartPc(restartTarget.id);
+      console.log(
+        "Session extended successfully"
+      );
+    } catch (error) {
+      console.error(
+        "Failed to extend session",
+        error
+      );
 
-    console.log("Restart request sent successfully.");
-  } catch (error) {
-    console.error("Failed to restart PC:", error);
+      alert("Failed to extend session.");
+    }
+  };
 
-    alert("Failed to restart PC.");
-  } finally {
-    setRestartOpen(false);
-    setRestartTarget(null);
-  }
-};
+  const handleEndSession = (pc: PC) => {
+    console.log(
+      "End button clicked",
+      pc
+    );
 
-const handleShutdown = (pc: PC) => {
-  setShutdownTarget(pc);
-  setShutdownOpen(true);
-};
+    setSelectedPc(pc);
+    setConfirmOpen(true);
+  };
 
-const confirmShutdown = async () => {
-  if (!shutdownTarget) return;
+  const confirmEndSession = async () => {
+    if (!selectedPc) {
+      return;
+    }
 
-  try {
-    await shutdownPc(shutdownTarget.id);
+    try {
+      await endSession(selectedPc.id);
 
-    console.log("Shutdown request sent successfully.");
-  } catch (error) {
-    console.error("Failed to shut down PC:", error);
+      console.log(
+        "Session ended successfully"
+      );
+    } catch (error) {
+      console.error(
+        "Failed to end session",
+        error
+      );
 
-    alert("Failed to shut down PC.");
-  } finally {
-    setShutdownOpen(false);
-    setShutdownTarget(null);
-  }
-};
+      alert("Failed to end session.");
+    } finally {
+      setConfirmOpen(false);
+      setSelectedPc(null);
+    }
+  };
 
-const handleWake = (pc: PC) => {
-  setWakeTarget(pc);
-  setWakeOpen(true);
-};
+  const handleRestart = (pc: PC) => {
+    setRestartTarget(pc);
+    setRestartOpen(true);
+  };
 
-const confirmWake = async () => {
-  if (!wakeTarget) return;
+  const confirmRestart = async () => {
+    if (!restartTarget) {
+      return;
+    }
 
-  try {
-    await wakePc(wakeTarget.id);
+    try {
+      await restartPc(
+        restartTarget.id
+      );
 
-    console.log("Wake request sent successfully.");
-  } catch (error) {
-    console.error("Failed to wake PC:", error);
+      console.log(
+        "Restart request sent successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Failed to restart PC:",
+        error
+      );
 
-    alert("Failed to wake PC.");
-  } finally {
-    setWakeOpen(false);
-    setWakeTarget(null);
-  }
-};
+      alert("Failed to restart PC.");
+    } finally {
+      setRestartOpen(false);
+      setRestartTarget(null);
+    }
+  };
 
-const handleExtendSession = async (pc: PC, minutes: number) => {
-  try {
-    await extendSession(pc.id, minutes);
+  const handleShutdown = (pc: PC) => {
+    setShutdownTarget(pc);
+    setShutdownOpen(true);
+  };
 
-    console.log("Session extended successfully");
-  } catch (error) {
-    console.error("Failed to extend session", error);
+  const confirmShutdown = async () => {
+    if (!shutdownTarget) {
+      return;
+    }
 
-    alert("Failed to extend session.");
-  }
-};
+    try {
+      await shutdownPc(
+        shutdownTarget.id
+      );
 
+      console.log(
+        "Shutdown request sent successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Failed to shut down PC:",
+        error
+      );
 
-const confirmEndSession = async () => {
-  if (!selectedPc) return;
+      alert("Failed to shut down PC.");
+    } finally {
+      setShutdownOpen(false);
+      setShutdownTarget(null);
+    }
+  };
 
-  try {
-    await endSession(selectedPc.id);
+  const handleWake = (pc: PC) => {
+    setWakeTarget(pc);
+    setWakeOpen(true);
+  };
 
-    console.log("Session ended successfully");
-  } catch (error) {
-    console.error("Failed to end session", error);
+  const confirmWake = async () => {
+    if (!wakeTarget) {
+      return;
+    }
 
-    alert("Failed to end session.");
-  } finally {
-    setConfirmOpen(false);
-    setSelectedPc(null);
-  }
-};
+    try {
+      await wakePc(
+        wakeTarget.id
+      );
 
-const handleEndSession = (pc: PC) => {
-  console.log("End button clicked", pc);
+      console.log(
+        "Wake request sent successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Failed to wake PC:",
+        error
+      );
 
-  setSelectedPc(pc);
-  setConfirmOpen(true);
-
-};
+      alert("Failed to wake PC.");
+    } finally {
+      setWakeOpen(false);
+      setWakeTarget(null);
+    }
+  };
 
   return (
-      <AppShell>
-        <div className="space-y-6 max-w-[1400px] mx-auto">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-1.5 p-1 rounded-lg bg-secondary border border-border">
-              {FILTERS.map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                    filter === f.key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+    <AppShell>
+      <div className="space-y-6">
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refresh}
-              >
-                Refresh
-              </Button>
+        {/* Header */}
 
-              <Button size="sm">
-                Broadcast Message
-              </Button>
-            </div>
+        <div className="flex items-center justify-between gap-4">
+
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Gaming PCs
+            </h1>
+
+            <p className="text-muted-foreground mt-1">
+              Control every station in real time
+            </p>
           </div>
 
-          {loading ? (
-            <div className="text-center py-10 text-muted-foreground">
-              Loading PCs...
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {pcs.map((pc) => (
-                <PCCard
-                  key={pc.id}
-                  pc={pc}
-                  onStart={openStartModal}
-                  onExtend={openExtendModal}
-                  onEnd={handleEndSession}
-                  onRestart={handleRestart}
-                  onShutdown={handleShutdown}
-                  onWake={handleWake}
-                />
-              ))}
-            </div>
-          )}
-<PendingPayments
-          payments={payments}
-        />
-        <ExtendSessionModal 
+        </div>
+
+        {/* Filters + Actions */}
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+
+          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+
+            {FILTERS.map((filterOption) => (
+              <button
+                key={filterOption.key}
+                onClick={() =>
+                  setFilter(filterOption.key)
+                }
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  filter === filterOption.key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {filterOption.label}
+              </button>
+            ))}
+
+          </div>
+
+          <div className="flex items-center gap-2">
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refresh}
+            >
+              Refresh
+            </Button>
+
+            <Button size="sm">
+              Broadcast Message
+            </Button>
+
+          </div>
+
+        </div>
+
+        {/* Gaming PCs */}
+
+        {loading ? (
+          <div className="text-center py-10 text-muted-foreground">
+            Loading PCs...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+
+            {pcs.map((pc) => (
+              <PCCard
+                key={pc.id}
+                pc={pc}
+                onStart={openStartModal}
+                onExtend={openExtendModal}
+                onEnd={handleEndSession}
+                onRestart={handleRestart}
+                onShutdown={handleShutdown}
+                onWake={handleWake}
+              />
+            ))}
+
+          </div>
+        )}
+
+      </div>
+
+      {/* Start Session */}
+
+      <StartSessionModal
+        pc={modalPC}
+        open={open}
+        onOpenChange={setOpen}
+        onStart={handleStartSession}
+      />
+
+      {/* Extend Session */}
+
+      <ExtendSessionModal
         pc={extendPC}
         open={extendOpen}
         onOpenChange={setExtendOpen}
         onExtend={handleExtendSession}
       />
 
-        </div>
+      {/* End Session */}
 
+      <ConfirmDialog
+        open={confirmOpen}
+        title="End Session"
+        description={
+          selectedPc
+            ? `Are you sure you want to end the session for ${selectedPc.name}?`
+            : ""
+        }
+        confirmText="End Session"
+        cancelText="Cancel"
+        onConfirm={confirmEndSession}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setSelectedPc(null);
+        }}
+      />
 
+      {/* Restart PC */}
 
-        <StartSessionModal
-          pc={modalPC}
-          open={open}
-          onOpenChange={setOpen}
-          onStart={handleStartSession}
-        />
-        <ConfirmDialog
-    open={confirmOpen}
-    title="End Session"
-    description={
-      selectedPc
-        ? `Are you sure you want to end the session for ${selectedPc.name}?`
-        : ""
-    }
-    confirmText="End Session"
-    cancelText="Cancel"
-    onConfirm={confirmEndSession}
-    onCancel={() => {
-      setConfirmOpen(false);
-      setSelectedPc(null);
-    }}
+      <ConfirmDialog
+        open={restartOpen}
+        title="Restart PC"
+        description={
+          restartTarget
+            ? `Are you sure you want to restart ${restartTarget.name}? This will immediately restart the computer.`
+            : ""
+        }
+        confirmText="Restart"
+        cancelText="Cancel"
+        onConfirm={confirmRestart}
+        onCancel={() => {
+          setRestartOpen(false);
+          setRestartTarget(null);
+        }}
+      />
 
-  />
-  <ConfirmDialog
-    open={restartOpen}
-    title="Restart PC"
-    description={
-      restartTarget
-        ? `Are you sure you want to restart ${restartTarget.name}? This will immediately restart the computer.`
-        : ""
-    }
-    confirmText="Restart"
-    cancelText="Cancel"
-    onConfirm={confirmRestart}
-    onCancel={() => {
-      setRestartOpen(false);
-      setRestartTarget(null);
-    }}
-  />
+      {/* Shutdown PC */}
 
-  <ConfirmDialog
-    open={shutdownOpen}
-    title="Shutdown PC"
-    description={
-      shutdownTarget
-        ? `Are you sure you want to shut down ${shutdownTarget.name}? This will immediately power off the computer.`
-        : ""
-    }
-    confirmText="Shutdown"
-    cancelText="Cancel"
-    onConfirm={confirmShutdown}
-    onCancel={() => {
-      setShutdownOpen(false);
-      setShutdownTarget(null);
-    }}
-  />
+      <ConfirmDialog
+        open={shutdownOpen}
+        title="Shutdown PC"
+        description={
+          shutdownTarget
+            ? `Are you sure you want to shut down ${shutdownTarget.name}? This will immediately power off the computer.`
+            : ""
+        }
+        confirmText="Shutdown"
+        cancelText="Cancel"
+        onConfirm={confirmShutdown}
+        onCancel={() => {
+          setShutdownOpen(false);
+          setShutdownTarget(null);
+        }}
+      />
 
-  <ConfirmDialog
-    open={wakeOpen}
-    title="Wake PC"
-    description={
-      wakeTarget
-        ? `Are you sure you want to wake ${wakeTarget.name}?`
-        : ""
-    }
-    confirmText="Wake"
-    cancelText="Cancel"
-    onConfirm={confirmWake}
-    onCancel={() => {
-      setWakeOpen(false);
-      setWakeTarget(null);
-    }}
-  />
+      {/* Wake PC */}
 
+      <ConfirmDialog
+        open={wakeOpen}
+        title="Wake PC"
+        description={
+          wakeTarget
+            ? `Are you sure you want to wake ${wakeTarget.name}?`
+            : ""
+        }
+        confirmText="Wake"
+        cancelText="Cancel"
+        onConfirm={confirmWake}
+        onCancel={() => {
+          setWakeOpen(false);
+          setWakeTarget(null);
+        }}
+      />
 
-      </AppShell>
-    );
-  }
+    </AppShell>
+  );
+}

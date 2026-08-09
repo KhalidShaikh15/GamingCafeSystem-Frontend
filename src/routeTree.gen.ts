@@ -19,6 +19,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ManagementIndexRouteImport } from './routes/management/index'
 import { Route as ManagementPricingRouteImport } from './routes/management/pricing'
+import { Route as ManagementFoodRouteImport } from './routes/management/food'
 import { Route as ManagementLayoutRouteImport } from './routes/management/_layout'
 
 const SessionsRoute = SessionsRouteImport.update({
@@ -71,6 +72,11 @@ const ManagementPricingRoute = ManagementPricingRouteImport.update({
   path: '/management/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementFoodRoute = ManagementFoodRouteImport.update({
+  id: '/management/food',
+  path: '/management/food',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagementLayoutRoute = ManagementLayoutRouteImport.update({
   id: '/management/_layout',
   path: '/management',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
   '/management': typeof ManagementLayoutRoute
+  '/management/food': typeof ManagementFoodRoute
   '/management/pricing': typeof ManagementPricingRoute
   '/management/': typeof ManagementIndexRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
   '/management': typeof ManagementIndexRoute
+  '/management/food': typeof ManagementFoodRoute
   '/management/pricing': typeof ManagementPricingRoute
 }
 export interface FileRoutesById {
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
   '/management/_layout': typeof ManagementLayoutRoute
+  '/management/food': typeof ManagementFoodRoute
   '/management/pricing': typeof ManagementPricingRoute
   '/management/': typeof ManagementIndexRoute
 }
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sessions'
     | '/management'
+    | '/management/food'
     | '/management/pricing'
     | '/management/'
   fileRoutesByTo: FileRoutesByTo
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sessions'
     | '/management'
+    | '/management/food'
     | '/management/pricing'
   id:
     | '__root__'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sessions'
     | '/management/_layout'
+    | '/management/food'
     | '/management/pricing'
     | '/management/'
   fileRoutesById: FileRoutesById
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SessionsRoute: typeof SessionsRoute
   ManagementLayoutRoute: typeof ManagementLayoutRoute
+  ManagementFoodRoute: typeof ManagementFoodRoute
   ManagementPricingRoute: typeof ManagementPricingRoute
   ManagementIndexRoute: typeof ManagementIndexRoute
 }
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementPricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management/food': {
+      id: '/management/food'
+      path: '/management/food'
+      fullPath: '/management/food'
+      preLoaderRoute: typeof ManagementFoodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/management/_layout': {
       id: '/management/_layout'
       path: '/management'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SessionsRoute: SessionsRoute,
   ManagementLayoutRoute: ManagementLayoutRoute,
+  ManagementFoodRoute: ManagementFoodRoute,
   ManagementPricingRoute: ManagementPricingRoute,
   ManagementIndexRoute: ManagementIndexRoute,
 }

@@ -133,6 +133,20 @@ export async function wakePc(pcId: string) {
   return response.json();
 }
 
+export interface FoodSale {
+  id: number;
+  sessionId: number;
+  itemName: string;
+  unitPrice: number;
+  quantity: number;
+  grossAmount: number;
+  commissionType: "PERCENTAGE" | "FIXED";
+  commissionValue: number;
+  commissionAmount: number;
+  netAmount: number;
+  createdAt: string;
+}
+
 export interface PendingPayment {
   id: number;
   pcId: string;
@@ -142,8 +156,8 @@ export interface PendingPayment {
   actualMinutes: number | null;
   gamingCharge: number;
   status: string;
+  foodSales: FoodSale[];
 }
-
 export async function getPendingPayments(): Promise<PendingPayment[]> {
 
   const response = await fetch(`${API_URL}/pending-payments`);
@@ -224,4 +238,49 @@ export async function updateSettings(
 
   return response.json();
 
+}
+
+export interface FoodSettings {
+  id: number;
+  businessModel: "IN_HOUSE" | "PARTNER";
+  commissionType: "PERCENTAGE" | "FIXED";
+  commissionValue: number;
+}
+
+export async function getFoodSettings(): Promise<FoodSettings> {
+  const response = await fetch(`${API_URL}/food-settings`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch food settings");
+  }
+
+  return response.json();
+}
+
+export async function updateFoodSettings(
+  settings: Omit<FoodSettings, "id">
+) {
+  const response = await fetch(`${API_URL}/food-settings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(settings),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save food settings");
+  }
+
+  return response.json();
+}
+
+export async function getAllFoodSales(): Promise<FoodSale[]> {
+  const response = await fetch(`${API_URL}/food-sales`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch food sales");
+  }
+
+  return response.json();
 }
