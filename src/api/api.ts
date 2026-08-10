@@ -156,8 +156,16 @@ export interface PendingPayment {
   actualMinutes: number | null;
   gamingCharge: number;
   status: string;
+
   foodSales: FoodSale[];
+
+  foodGrossTotal: number;
+  foodCommissionTotal: number;
+  foodNetTotal: number;
+  totalAmount: number;
+  paidAt: string | null;
 }
+
 export async function getPendingPayments(): Promise<PendingPayment[]> {
 
   const response = await fetch(`${API_URL}/pending-payments`);
@@ -248,7 +256,14 @@ export interface FoodSettings {
 }
 
 export async function getFoodSettings(): Promise<FoodSettings> {
-  const response = await fetch(`${API_URL}/food-settings`);
+  const response = await fetch(
+    `${API_URL}/food-settings`,
+    {
+      headers: {
+        ...ownerHeaders(),
+      },
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch food settings");
@@ -260,13 +275,17 @@ export async function getFoodSettings(): Promise<FoodSettings> {
 export async function updateFoodSettings(
   settings: Omit<FoodSettings, "id">
 ) {
-  const response = await fetch(`${API_URL}/food-settings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(settings),
-  });
+  const response = await fetch(
+    `${API_URL}/food-settings`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...ownerHeaders(),
+      },
+      body: JSON.stringify(settings),
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to save food settings");
@@ -274,7 +293,6 @@ export async function updateFoodSettings(
 
   return response.json();
 }
-
 export async function getAllFoodSales(): Promise<FoodSale[]> {
   const response = await fetch(`${API_URL}/food-sales`);
 
@@ -283,4 +301,104 @@ export async function getAllFoodSales(): Promise<FoodSale[]> {
   }
 
   return response.json();
+}
+
+export async function getPaidSessions(): Promise<PendingPayment[]> {
+  const response = await fetch(
+    `${API_URL}/paid-sessions`,
+    {
+      headers: {
+        ...ownerHeaders(),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch paid sessions");
+  }
+
+  return response.json();
+}
+
+export async function checkOwnerAuthStatus(): Promise<{
+  configured: boolean;
+}> {
+  const response = await fetch(
+    `${API_URL}/owner-auth/status`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Failed to check owner authentication"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function loginOwner(
+  password: string
+): Promise<{
+  authenticated: boolean;
+  token?: string;
+}> {
+  const response = await fetch(
+    `${API_URL}/owner-auth/login`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        password,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error ||
+        "Owner authentication failed"
+    );
+  }
+
+  return data;
+}
+
+export function saveOwnerToken(
+  token: string
+) {
+  sessionStorage.setItem(
+    "ownerAuthToken",
+    token
+  );
+}
+
+
+export function getOwnerToken():
+  | string
+  | null {
+  return sessionStorage.getItem(
+    "ownerAuthToken"
+  );
+}
+
+
+export function clearOwnerToken() {
+  sessionStorage.removeItem(
+    "ownerAuthToken"
+  );
+}
+
+export function ownerHeaders(): HeadersInit {
+  const token = getOwnerToken();
+
+  return token
+    ? {
+        Authorization: `Bearer ${token}`,
+      }
+    : {};
 }

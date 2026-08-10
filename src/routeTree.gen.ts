@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SessionsRouteImport } from './routes/sessions'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as OwnerLoginRouteImport } from './routes/owner-login'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as GamingPcsRouteImport } from './routes/gaming-pcs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -30,6 +31,11 @@ const SessionsRoute = SessionsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerLoginRoute = OwnerLoginRouteImport.update({
+  id: '/owner-login',
+  path: '/owner-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogsRoute = LogsRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/gaming-pcs': typeof GamingPcsRoute
   '/logs': typeof LogsRoute
+  '/owner-login': typeof OwnerLoginRoute
   '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
   '/management': typeof ManagementLayoutRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/gaming-pcs': typeof GamingPcsRoute
   '/logs': typeof LogsRoute
+  '/owner-login': typeof OwnerLoginRoute
   '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
   '/management': typeof ManagementIndexRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/gaming-pcs': typeof GamingPcsRoute
   '/logs': typeof LogsRoute
+  '/owner-login': typeof OwnerLoginRoute
   '/reports': typeof ReportsRoute
   '/sessions': typeof SessionsRoute
   '/management/_layout': typeof ManagementLayoutRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gaming-pcs'
     | '/logs'
+    | '/owner-login'
     | '/reports'
     | '/sessions'
     | '/management'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gaming-pcs'
     | '/logs'
+    | '/owner-login'
     | '/reports'
     | '/sessions'
     | '/management'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gaming-pcs'
     | '/logs'
+    | '/owner-login'
     | '/reports'
     | '/sessions'
     | '/management/_layout'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GamingPcsRoute: typeof GamingPcsRoute
   LogsRoute: typeof LogsRoute
+  OwnerLoginRoute: typeof OwnerLoginRoute
   ReportsRoute: typeof ReportsRoute
   SessionsRoute: typeof SessionsRoute
   ManagementLayoutRoute: typeof ManagementLayoutRoute
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner-login': {
+      id: '/owner-login'
+      path: '/owner-login'
+      fullPath: '/owner-login'
+      preLoaderRoute: typeof OwnerLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logs': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GamingPcsRoute: GamingPcsRoute,
   LogsRoute: LogsRoute,
+  OwnerLoginRoute: OwnerLoginRoute,
   ReportsRoute: ReportsRoute,
   SessionsRoute: SessionsRoute,
   ManagementLayoutRoute: ManagementLayoutRoute,

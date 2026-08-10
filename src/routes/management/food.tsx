@@ -1,5 +1,8 @@
-    import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+
+import { AppShell } from "@/components/layout/AppShell";
 
 import {
   Card,
@@ -75,150 +78,185 @@ function FoodSettingsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        Loading...
-      </div>
+      <AppShell>
+        <div className="max-w-7xl mx-auto">
+          Loading...
+        </div>
+      </AppShell>
     );
   }
 
-  const isPartner = settings.businessModel === "PARTNER";
+  const isPartner =
+    settings.businessModel === "PARTNER";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <AppShell>
+      <div className="max-w-7xl mx-auto space-y-8">
 
-      <div>
-        <h1 className="text-3xl font-bold">
-          Food & Beverage
-        </h1>
+        {/* Back to Management */}
 
-        <p className="text-muted-foreground mt-2">
-          Configure how food sales and partner commissions work.
-        </p>
-      </div>
+        <div>
+          <Link
+            to="/management"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Management
+          </Link>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Food Business Model
-          </CardTitle>
-        </CardHeader>
+          <h1 className="text-3xl font-bold">
+            Food & Beverage
+          </h1>
 
-        <CardContent className="space-y-6">
+          <p className="text-muted-foreground mt-2">
+            Configure how food sales and partner commissions work.
+          </p>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Food Operation
-            </label>
+        {/* Food Settings */}
 
-            <select
-              className="w-full h-10 rounded-md border bg-background px-3"
-              value={settings.businessModel}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  businessModel: e.target.value as
-                    | "IN_HOUSE"
-                    | "PARTNER",
-                })
-              }
-            >
-              <option value="IN_HOUSE">
-                In-house Café
-              </option>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Food Business Model
+            </CardTitle>
+          </CardHeader>
 
-              <option value="PARTNER">
-                Partner Café / Food Vendor
-              </option>
-            </select>
+          <CardContent className="space-y-6">
 
-            <p className="text-xs text-muted-foreground mt-2">
-              Choose whether the food operation belongs to your café
-              or an external food partner.
-            </p>
-          </div>
+            {/* Food Operation */}
 
-          {isPartner && (
-            <>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Commission Type
-                </label>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Food Operation
+              </label>
 
-                <select
-                  className="w-full h-10 rounded-md border bg-background px-3"
-                  value={settings.commissionType}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      commissionType: e.target.value as
-                        | "PERCENTAGE"
-                        | "FIXED",
-                    })
-                  }
-                >
-                  <option value="PERCENTAGE">
-                    Percentage
-                  </option>
+              <select
+                className="w-full h-10 rounded-md border bg-background px-3"
+                value={settings.businessModel}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    businessModel:
+                      e.target.value as
+                        | "IN_HOUSE"
+                        | "PARTNER",
+                  })
+                }
+              >
+                <option value="IN_HOUSE">
+                  In-house Café
+                </option>
 
-                  <option value="FIXED">
-                    Fixed Amount
-                  </option>
-                </select>
-              </div>
+                <option value="PARTNER">
+                  Partner Café / Food Vendor
+                </option>
+              </select>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Commission
-                </label>
+              <p className="text-xs text-muted-foreground mt-2">
+                Choose whether the food operation belongs to your
+                café or an external food partner.
+              </p>
+            </div>
 
-                <div className="relative">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={settings.commissionValue}
+            {/* Partner Settings */}
+
+            {isPartner && (
+              <>
+                {/* Commission Type */}
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Commission Type
+                  </label>
+
+                  <select
+                    className="w-full h-10 rounded-md border bg-background px-3"
+                    value={settings.commissionType}
                     onChange={(e) =>
                       setSettings({
                         ...settings,
-                        commissionValue: Number(e.target.value),
+                        commissionType:
+                          e.target.value as
+                            | "PERCENTAGE"
+                            | "FIXED",
                       })
                     }
-                  />
+                  >
+                    <option value="PERCENTAGE">
+                      Percentage
+                    </option>
+
+                    <option value="FIXED">
+                      Fixed Amount
+                    </option>
+                  </select>
                 </div>
 
-                <p className="text-xs text-muted-foreground mt-2">
-                  {settings.commissionType === "PERCENTAGE"
-                    ? "Example: enter 20 for a 20% commission."
-                    : "Enter the fixed commission amount per food sale."}
+                {/* Commission */}
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Commission
+                  </label>
+
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={settings.commissionValue}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          commissionValue:
+                            Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {settings.commissionType ===
+                    "PERCENTAGE"
+                      ? "Example: enter 20 for a 20% commission."
+                      : "Enter the fixed commission amount per food sale."}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* In-house Message */}
+
+            {!isPartner && (
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+                <p className="text-sm font-medium">
+                  In-house food operation
+                </p>
+
+                <p className="text-xs text-muted-foreground mt-1">
+                  No external commission will be deducted from
+                  food revenue.
                 </p>
               </div>
-            </>
-          )}
+            )}
 
-          {!isPartner && (
-            <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
-              <p className="text-sm font-medium">
-                In-house food operation
-              </p>
+            {/* Save */}
 
-              <p className="text-xs text-muted-foreground mt-1">
-                No external commission will be deducted from food
-                revenue.
-              </p>
-            </div>
-          )}
+            <Button
+              className="w-full"
+              onClick={saveSettings}
+              disabled={saving}
+            >
+              {saving
+                ? "Saving..."
+                : "Save Food Settings"}
+            </Button>
 
-          <Button
-            className="w-full"
-            onClick={saveSettings}
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save Food Settings"}
-          </Button>
+          </CardContent>
+        </Card>
 
-        </CardContent>
-      </Card>
-
-    </div>
+      </div>
+    </AppShell>
   );
 }

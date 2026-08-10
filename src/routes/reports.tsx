@@ -1,65 +1,201 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import {
+  createFileRoute,
+  redirect,
+} from "@tanstack/react-router";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 import {
-  getAllFoodSales,
-  type FoodSale,
+  getPaidSessions,
+  getOwnerToken,
+  type PendingPayment,
 } from "@/api/api";
 
 export const Route = createFileRoute("/reports")({
+  beforeLoad: () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const token =
+    window.sessionStorage.getItem("ownerAuthToken");
+
+  if (!token) {
+    throw redirect({
+      to: "/owner-login",
+    });
+  }
+},
+
   component: ReportsPage,
 });
 
 function ReportsPage() {
-  const [foodSales, setFoodSales] = useState<FoodSale[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState<
+    "today" | "yesterday" | "week" | "month" | "all"
+  >("today");
+
+  const [sessions, setSessions] =
+    useState<PendingPayment[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
-    loadFoodSales();
-  }, []);
+  const token = getOwnerToken();
 
-  async function loadFoodSales() {
+  if (!token) {
+    window.location.href = "/owner-login";
+    return;
+  }
+
+  loadPaidSessions();
+}, []);
+
+    const filteredSessions = useMemo(() => {
+    const now = new Date();
+
+    if (dateFilter === "all") {
+      return sessions;
+    }
+
+    const start = new Date(now);
+    const end = new Date(now);
+
+    if (dateFilter === "today") {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    }
+
+    if (dateFilter === "yesterday") {
+      start.setDate(start.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+
+      end.setDate(end.getDate() - 1);
+      end.setHours(23, 59, 59, 999);
+    }
+
+    if (dateFilter === "week") {
+  const day = start.getDay();
+
+  // Monday = 0, Tuesday = 1, ... Sunday = 6
+  const daysSinceMonday =
+    day === 0 ? 6 : day - 1;
+
+  start.setDate(
+    start.getDate() - daysSinceMonday
+  );
+
+  start.setHours(0, 0, 0, 0);
+
+  end.setDate(
+    start.getDate() + 6
+  );
+
+  end.setHours(23, 59, 59, 999);
+}
+
+    if (dateFilter === "month") {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+
+      end.setMonth(
+        end.getMonth() + 1,
+        0
+      );
+      end.setHours(23, 59, 59, 999);
+    }
+
+    return sessions.filter((session) => {
+      if (!session.paidAt) {
+        return false;
+      }
+
+      const paidAt = new Date(
+        session.paidAt
+      );
+
+      return (
+        paidAt >= start &&
+        paidAt <= end
+      );
+    });
+  }, [sessions, dateFilter]);
+
+  async function loadPaidSessions() {
     try {
       setLoading(true);
 
-      const data = await getAllFoodSales();
+      const data = await getPaidSessions();
 
-      setFoodSales(data);
+      setSessions(data);
+
     } catch (error) {
-      console.error(error);
+  console.error(error);
 
-      alert("Failed to load food sales.");
-    } finally {
+  const token = getOwnerToken();
+
+  if (!token) {
+    window.location.href = "/owner-login";
+    return;
+  }
+
+  alert("Failed to load reports.");
+} finally {
       setLoading(false);
     }
   }
 
-  const totalFoodSales = useMemo(() => {
-    return foodSales.reduce(
-      (total, sale) =>
-        total + sale.grossAmount,
+  const totalGamingRevenue = useMemo(() => {
+    return filteredSessions.reduce(
+      (total, session) =>
+        total + session.gamingCharge,
       0
     );
-  }, [foodSales]);
+  }, [filteredSessions]);
+
+  const totalFoodSales = useMemo(() => {
+    return filteredSessions.reduce(
+      (total, session) =>
+        total + session.foodGrossTotal,
+      0
+    );
+  }, [filteredSessions]);
 
   const totalCommission = useMemo(() => {
-    return foodSales.reduce(
-      (total, sale) =>
-        total + sale.commissionAmount,
+    return filteredSessions.reduce(
+      (total, session) =>
+        total + session.foodCommissionTotal,
       0
     );
-  }, [foodSales]);
+  }, [filteredSessions]);
 
-  const totalCafeRevenue = useMemo(() => {
-    return foodSales.reduce(
-      (total, sale) =>
-        total + sale.netAmount,
+  const totalCafeFoodRevenue = useMemo(() => {
+    return filteredSessions.reduce(
+      (total, session) =>
+        total + session.foodNetTotal,
       0
     );
-  }, [foodSales]);
+  }, [filteredSessions]);
+
+  const totalRevenue = useMemo(() => {
+    return filteredSessions.reduce(
+      (total, session) =>
+        total + session.totalAmount,
+      0
+    );
+  }, [filteredSessions]);
 
   return (
     <AppShell>
@@ -67,16 +203,55 @@ function ReportsPage() {
 
         {/* Header */}
 
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Reports
-          </h1>
+        <div className="space-y-4">
 
-          <p className="text-muted-foreground mt-2">
-            Review food sales, partner commissions,
-            and café revenue.
-          </p>
-        </div>
+  <div>
+    <h1 className="text-3xl font-bold tracking-tight">
+      Reports
+    </h1>
+
+    <p className="text-muted-foreground mt-2">
+      Review finalized revenue from completed
+      and paid sessions.
+    </p>
+  </div>
+
+  <div className="flex flex-wrap gap-2">
+
+    {[
+      { key: "today", label: "Today" },
+      { key: "yesterday", label: "Yesterday" },
+      { key: "week", label: "This Week" },
+      { key: "month", label: "This Month" },
+      { key: "all", label: "All Time" },
+    ].map((filter) => (
+
+      <button
+        key={filter.key}
+        onClick={() =>
+          setDateFilter(
+            filter.key as
+              | "today"
+              | "yesterday"
+              | "week"
+              | "month"
+              | "all"
+          )
+        }
+        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          dateFilter === filter.key
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        {filter.label}
+      </button>
+
+    ))}
+
+  </div>
+
+</div>
 
         {loading ? (
           <Card>
@@ -86,9 +261,48 @@ function ReportsPage() {
           </Card>
         ) : (
           <>
-            {/* Summary */}
 
-            <div className="grid gap-6 md:grid-cols-4">
+            {/* Revenue Summary */}
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">
+                    Total Revenue
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  <p className="text-2xl font-bold">
+                    ₹{totalRevenue.toFixed(2)}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Customer payments
+                  </p>
+                </CardContent>
+              </Card>
+
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">
+                    Gaming Revenue
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  <p className="text-2xl font-bold">
+                    ₹{totalGamingRevenue.toFixed(2)}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Gaming sessions
+                  </p>
+                </CardContent>
+              </Card>
+
 
               <Card>
                 <CardHeader>
@@ -122,7 +336,7 @@ function ReportsPage() {
                   </p>
 
                   <p className="text-xs text-muted-foreground mt-1">
-                    Commission owed to partners
+                    Commission owed
                   </p>
                 </CardContent>
               </Card>
@@ -131,13 +345,13 @@ function ReportsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm font-medium">
-                    Café Revenue
+                    Café Food Revenue
                   </CardTitle>
                 </CardHeader>
 
                 <CardContent>
                   <p className="text-2xl font-bold">
-                    ₹{totalCafeRevenue.toFixed(2)}
+                    ₹{totalCafeFoodRevenue.toFixed(2)}
                   </p>
 
                   <p className="text-xs text-muted-foreground mt-1">
@@ -146,50 +360,30 @@ function ReportsPage() {
                 </CardContent>
               </Card>
 
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">
-                    Transactions
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {foodSales.length}
-                  </p>
-
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Food transactions
-                  </p>
-                </CardContent>
-              </Card>
-
             </div>
 
 
-            {/* Food Sales History */}
+            {/* Paid Sessions */}
 
             <Card>
 
               <CardHeader>
                 <CardTitle>
-                  Food Sales History
+                  Paid Sessions
                 </CardTitle>
               </CardHeader>
 
               <CardContent>
 
-                {foodSales.length === 0 ? (
+                {sessions.length === 0 ? (
                   <div className="py-10 text-center">
 
                     <p className="font-medium">
-                      No food sales yet
+                      No paid sessions yet
                     </p>
 
                     <p className="text-sm text-muted-foreground mt-1">
-                      Food transactions will appear here
-                      once they are added to a session.
+                      Completed payments will appear here.
                     </p>
 
                   </div>
@@ -199,10 +393,11 @@ function ReportsPage() {
                     <table className="w-full text-sm">
 
                       <thead>
+
                         <tr className="border-b">
 
                           <th className="text-left py-3 pr-4">
-                            Date
+                            Paid At
                           </th>
 
                           <th className="text-left py-3 pr-4">
@@ -210,72 +405,91 @@ function ReportsPage() {
                           </th>
 
                           <th className="text-left py-3 pr-4">
-                            Item
+                            PC
                           </th>
 
                           <th className="text-right py-3 pr-4">
-                            Qty
+                            Gaming
                           </th>
 
                           <th className="text-right py-3 pr-4">
-                            Gross
+                            Food
                           </th>
 
                           <th className="text-right py-3 pr-4">
                             Commission
                           </th>
 
+                          <th className="text-right py-3 pr-4">
+                            Café Food
+                          </th>
+
                           <th className="text-right py-3">
-                            Café Revenue
+                            Total
                           </th>
 
                         </tr>
+
                       </thead>
 
                       <tbody>
 
-                        {foodSales.map((sale) => (
+                        {filteredSessions.map((session) => (
 
                           <tr
-                            key={sale.id}
+                            key={session.id}
                             className="border-b last:border-0"
                           >
 
                             <td className="py-3 pr-4 whitespace-nowrap">
-                              {new Date(
-                                sale.createdAt
-                              ).toLocaleString()}
+
+                              {session.paidAt
+                                ? new Date(
+                                    session.paidAt
+                                  ).toLocaleString()
+                                : "—"}
+
                             </td>
 
                             <td className="py-3 pr-4">
-                              #{sale.sessionId}
+                              #{session.id}
                             </td>
 
-                            <td className="py-3 pr-4 font-medium">
-                              {sale.itemName}
-                            </td>
-
-                            <td className="py-3 pr-4 text-right">
-                              {sale.quantity}
+                            <td className="py-3 pr-4">
+                              {session.pcId}
                             </td>
 
                             <td className="py-3 pr-4 text-right">
                               ₹
-                              {sale.grossAmount.toFixed(
+                              {session.gamingCharge.toFixed(
                                 2
                               )}
                             </td>
 
                             <td className="py-3 pr-4 text-right">
                               ₹
-                              {sale.commissionAmount.toFixed(
+                              {session.foodGrossTotal.toFixed(
+                                2
+                              )}
+                            </td>
+
+                            <td className="py-3 pr-4 text-right">
+                              ₹
+                              {session.foodCommissionTotal.toFixed(
+                                2
+                              )}
+                            </td>
+
+                            <td className="py-3 pr-4 text-right">
+                              ₹
+                              {session.foodNetTotal.toFixed(
                                 2
                               )}
                             </td>
 
                             <td className="py-3 text-right font-medium">
                               ₹
-                              {sale.netAmount.toFixed(
+                              {session.totalAmount.toFixed(
                                 2
                               )}
                             </td>
