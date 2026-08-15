@@ -13,36 +13,25 @@ export const Route = createFileRoute("/owner-login")({
 function OwnerLoginPage() {
   const navigate = useNavigate();
 
-  const [password, setPassword] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (
     event: React.FormEvent
   ) => {
-
     event.preventDefault();
 
     if (!password.trim()) {
-      setError(
-        "Please enter your owner password."
-      );
-
+      setError("Please enter your owner password.");
       return;
     }
 
     try {
-
       setLoading(true);
       setError("");
 
-      const result =
-        await loginOwner(password);
+      const result = await loginOwner(password);
 
       if (!result.token) {
         throw new Error(
@@ -53,11 +42,10 @@ function OwnerLoginPage() {
       saveOwnerToken(result.token);
 
       navigate({
-        to: "/reports",
+        to: "/management",
       });
 
     } catch (error) {
-
       console.error(
         "Owner login failed:",
         error
@@ -70,11 +58,8 @@ function OwnerLoginPage() {
       );
 
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   return (
@@ -92,11 +77,10 @@ function OwnerLoginPage() {
 
             <p className="text-sm text-muted-foreground mt-2">
               Enter your owner password to access
-              business reports.
+              business management and reports.
             </p>
 
           </div>
-
 
           <form
             onSubmit={handleLogin}
@@ -117,9 +101,7 @@ function OwnerLoginPage() {
                 type="password"
                 value={password}
                 onChange={(event) =>
-                  setPassword(
-                    event.target.value
-                  )
+                  setPassword(event.target.value)
                 }
                 placeholder="Enter your password"
                 autoFocus
@@ -128,13 +110,11 @@ function OwnerLoginPage() {
 
             </div>
 
-
             {error && (
               <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
               </div>
             )}
-
 
             <button
               type="submit"

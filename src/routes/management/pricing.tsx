@@ -29,7 +29,6 @@ function PricingPage() {
 
   const [settings, setSettings] = useState<Settings>({
     id: 1,
-    cafeName: "",
     billingType: "PER_MINUTE",
     gamingRate: 2,
     currency: "INR",
@@ -56,7 +55,6 @@ function PricingPage() {
   async function saveSettings() {
     try {
       await updateSettings({
-        cafeName: settings.cafeName,
         billingType: settings.billingType,
         gamingRate: settings.gamingRate,
         currency: settings.currency,
@@ -115,23 +113,6 @@ function PricingPage() {
 
           <CardContent className="space-y-6">
 
-            {/* Cafe Name */}
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Cafe Name
-              </label>
-
-              <Input
-                value={settings.cafeName}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    cafeName: e.target.value,
-                  })
-                }
-              />
-            </div>
 
             {/* Currency */}
 

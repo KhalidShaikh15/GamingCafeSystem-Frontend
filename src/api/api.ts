@@ -201,9 +201,6 @@ export async function collectPayment(sessionId: number) {
 export interface Settings {
 
   id: number;
-
-  cafeName: string;
-
   billingType: "PER_MINUTE" | "PER_HOUR";
 
   gamingRate: number;

@@ -1,5 +1,9 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+} from "@tanstack/react-router";
 import {
   DollarSign,
   UtensilsCrossed,
@@ -9,6 +13,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/management/")({
+  beforeLoad: () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const token =
+      window.sessionStorage.getItem("ownerAuthToken");
+
+    if (!token) {
+      throw redirect({
+        to: "/owner-login",
+      });
+    }
+  },
+
   component: ManagementPage,
 });
 
