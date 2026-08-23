@@ -1,15 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Receipt, ChevronDown, ChevronUp, UtensilsCrossed, Monitor } from "lucide-react";
 
 import { AppShell } from "@/components/layout/AppShell";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import {
   getPendingPayments,
@@ -43,6 +39,22 @@ function BillingPage() {
       }
     >
   >({});
+
+  // UI-only: which session rows are expanded to show food detail / add-food.
+  // Does not affect data fetching or any calculation below.
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  function toggleExpanded(sessionId: number) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        next.add(sessionId);
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     loadPayments();
@@ -215,296 +227,216 @@ function BillingPage() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto space-y-8">
-
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Billing
-          </h1>
-
-          <p className="text-muted-foreground mt-2">
-            Review pending payments, add food items,
-            and collect customer payments.
-          </p>
+      <div className="relative isolate">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div
+            className="absolute -top-24 -left-16 h-80 w-80 rounded-full opacity-[0.15] blur-3xl"
+            style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)" }}
+          />
         </div>
 
-        {loading ? (
-          <Card>
-            <CardContent className="p-6">
-              Loading pending payments...
-            </CardContent>
-          </Card>
-        ) : payments.length === 0 ? (
-          <Card>
-            <CardContent className="p-10 text-center">
+        <div className="max-w-7xl mx-auto space-y-6">
 
-              <h2 className="text-lg font-semibold">
-                No Pending Payments
-              </h2>
+          {/* Header */}
 
-              <p className="text-sm text-muted-foreground mt-2">
-                There are currently no gaming sessions
-                waiting for payment.
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl grid place-items-center border border-primary/30 bg-primary/10 text-primary shrink-0">
+              <Receipt className="h-5 w-5" />
+            </div>
+
+            <div>
+              <h1 className="text-3xl font-display font-bold tracking-tight leading-none">
+                Billing
+              </h1>
+
+              <p className="text-muted-foreground mt-1.5 text-sm">
+                Review pending payments, add food items, and collect customer payments.
               </p>
-
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2">
-
-            {payments.map((payment) => {
-
-              const foodTotal =
-                calculateFoodTotal(payment);
-
-              const commission =
-                calculateCommission(payment);
-
-              const grandTotal =
-                calculateGrandTotal(payment);
-
-              return (
-                <Card key={payment.id}>
-
-                  <CardHeader>
-                    <CardTitle>
-                      {payment.pcId}
-                    </CardTitle>
-
-                    <p className="text-sm text-muted-foreground">
-                      Session #{payment.id}
-                    </p>
-                  </CardHeader>
-
-                  <CardContent className="space-y-6">
-
-                    {/* Gaming */}
-
-                    <div>
-
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Gaming
-                        </span>
-
-                        <span className="font-medium">
-                          ₹
-                          {payment.gamingCharge.toFixed(
-                            2
-                          )}
-                        </span>
-                      </div>
-
-                    </div>
-
-                    {/* Food */}
-
-                    <div className="border-t pt-5">
-
-                      <h3 className="font-semibold mb-3">
-                        Food & Beverage
-                      </h3>
-
-                      {payment.foodSales.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No food added yet.
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-
-                          {payment.foodSales.map(
-                            (sale) => (
-                              <div
-                                key={sale.id}
-                                className="flex justify-between text-sm"
-                              >
-
-                                <span>
-                                  {sale.itemName} ×{" "}
-                                  {sale.quantity}
-                                </span>
-
-                                <span>
-                                  ₹
-                                  {sale.grossAmount.toFixed(
-                                    2
-                                  )}
-                                </span>
-
-                              </div>
-                            )
-                          )}
-
-                        </div>
-                      )}
-
-                    </div>
-
-                    {/* Add Food */}
-
-                    <div className="border rounded-lg p-4 space-y-3">
-
-                      <h4 className="text-sm font-semibold">
-                        Add Food
-                      </h4>
-
-                      <Input
-                        placeholder="Food item name"
-                        value={
-                          getFoodForm(payment.id)
-                            .itemName
-                        }
-                        onChange={(e) =>
-                          updateFoodForm(
-                            payment.id,
-                            "itemName",
-                            e.target.value
-                          )
-                        }
-                      />
-
-                      <div className="grid grid-cols-2 gap-3">
-
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="Price"
-                          value={
-                            getFoodForm(payment.id)
-                              .unitPrice
-                          }
-                          onChange={(e) =>
-                            updateFoodForm(
-                              payment.id,
-                              "unitPrice",
-                              e.target.value
-                            )
-                          }
-                        />
-
-                        <Input
-                          type="number"
-                          min="1"
-                          step="1"
-                          placeholder="Quantity"
-                          value={
-                            getFoodForm(payment.id)
-                              .quantity
-                          }
-                          onChange={(e) =>
-                            updateFoodForm(
-                              payment.id,
-                              "quantity",
-                              e.target.value
-                            )
-                          }
-                        />
-
-                      </div>
-
-                      <Button
-                        className="w-full"
-                        onClick={() =>
-                          addFood(payment.id)
-                        }
-                        disabled={
-                          foodLoadingId ===
-                          payment.id
-                        }
-                      >
-                        {foodLoadingId ===
-                        payment.id
-                          ? "Adding..."
-                          : "+ Add Food"}
-                      </Button>
-
-                    </div>
-
-                    {/* Summary */}
-
-                    <div className="border-t pt-5 space-y-3">
-
-  <div className="flex justify-between">
-    <span className="text-muted-foreground">
-      Gaming
-    </span>
-
-    <span>
-      ₹{payment.gamingCharge.toFixed(2)}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span className="text-muted-foreground">
-      Food Sales
-    </span>
-
-    <span>
-      ₹{foodTotal.toFixed(2)}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span className="text-muted-foreground">
-      Partner Commission
-    </span>
-
-    <span>
-      ₹{commission.toFixed(2)}
-    </span>
-  </div>
-
-  <div className="flex justify-between">
-    <span className="text-muted-foreground">
-      Café Food Revenue
-    </span>
-
-    <span>
-      ₹{(foodTotal - commission).toFixed(2)}
-    </span>
-  </div>
-
-  <div className="border-t pt-3 flex justify-between text-lg font-bold">
-    <span>
-      Customer Total
-    </span>
-
-    <span>
-      ₹{grandTotal.toFixed(2)}
-    </span>
-  </div>
-
-</div>
-
-                    {/* Collect */}
-
-                    <Button
-                      className="w-full"
-                      onClick={() =>
-                        handleCollectPayment(
-                          payment.id
-                        )
-                      }
-                      disabled={
-                        collectingId ===
-                        payment.id
-                      }
-                    >
-                      {collectingId === payment.id
-                        ? "Collecting..."
-                        : "Collect Payment"}
-                    </Button>
-
-                  </CardContent>
-
-                </Card>
-              );
-            })}
-
+            </div>
           </div>
-        )}
 
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="glass-surface border border-border rounded-xl h-16 animate-pulse"
+                />
+              ))}
+            </div>
+          ) : payments.length === 0 ? (
+            <div className="glass-surface border border-border rounded-xl px-6 py-16 flex flex-col items-center text-center gap-3">
+              <div className="h-14 w-14 rounded-xl grid place-items-center border border-border bg-background/40 text-muted-foreground">
+                <Receipt className="h-6 w-6" />
+              </div>
+              <h2 className="font-display font-bold text-lg">No Pending Payments</h2>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                There are currently no gaming sessions waiting for payment.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+
+              {payments.map((payment) => {
+
+                const foodTotal = calculateFoodTotal(payment);
+                const commission = calculateCommission(payment);
+                const grandTotal = calculateGrandTotal(payment);
+                const cafeFoodRevenue = foodTotal - commission;
+                const isExpanded = expandedIds.has(payment.id);
+
+                return (
+                  <div
+                    key={payment.id}
+                    className="glass-surface border border-border rounded-xl overflow-hidden transition-colors"
+                  >
+                    {/* Row */}
+                    <div className="flex flex-wrap items-center gap-4 px-5 py-4">
+
+                      {/* Identity */}
+                      <button
+                        onClick={() => toggleExpanded(payment.id)}
+                        className="flex items-center gap-3 min-w-[160px] text-left group"
+                      >
+                        <div className="h-10 w-10 rounded-lg grid place-items-center border border-border bg-background/50 text-muted-foreground shrink-0 group-hover:text-primary group-hover:border-primary/40 transition-colors">
+                          <Monitor className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-display font-bold leading-none truncate">
+                            {payment.pcId}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-1">
+                            Session #{payment.id}
+                          </div>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        )}
+                      </button>
+
+                      {/* Compact figures */}
+                      <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-1">
+                        <div className="min-w-[84px]">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Gaming</div>
+                          <div className="text-sm font-medium tabular-nums">₹{payment.gamingCharge.toFixed(2)}</div>
+                        </div>
+                        <div className="min-w-[84px]">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Food</div>
+                          <div className="text-sm font-medium tabular-nums">₹{foodTotal.toFixed(2)}</div>
+                        </div>
+                        <div className="min-w-[96px]">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Commission</div>
+                          <div className="text-sm font-medium tabular-nums">₹{commission.toFixed(2)}</div>
+                        </div>
+                        <div className="min-w-[104px]">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Café Revenue</div>
+                          <div className="text-sm font-medium tabular-nums">₹{cafeFoodRevenue.toFixed(2)}</div>
+                        </div>
+                      </div>
+
+                      {/* Total + action */}
+                      <div className="flex items-center gap-4 ml-auto">
+                        <div className="text-right">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Total</div>
+                          <div className="text-lg font-display font-bold tabular-nums leading-none">
+                            ₹{grandTotal.toFixed(2)}
+                          </div>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          className="shadow-[0_0_14px_-4px_var(--primary)]"
+                          onClick={() => handleCollectPayment(payment.id)}
+                          disabled={collectingId === payment.id}
+                        >
+                          {collectingId === payment.id ? "Collecting..." : "Collect Payment"}
+                        </Button>
+                      </div>
+
+                    </div>
+
+                    {/* Expandable detail */}
+                    {isExpanded && (
+                      <div className="border-t border-border px-5 py-4 space-y-4 bg-background/30">
+
+                        {/* Food items */}
+                        <div>
+                          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+                            <UtensilsCrossed className="h-3.5 w-3.5" />
+                            Food & Beverage
+                          </h3>
+
+                          {payment.foodSales.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No food added yet.</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {payment.foodSales.map((sale) => (
+                                <div key={sale.id} className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">
+                                    {sale.itemName} × {sale.quantity}
+                                  </span>
+                                  <span className="tabular-nums">₹{sale.grossAmount.toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Add food — compact inline row */}
+                        <div className="border border-border rounded-lg p-3 flex flex-wrap items-center gap-2">
+                          <Input
+                            placeholder="Food item name"
+                            className="flex-1 min-w-[140px] h-9"
+                            value={getFoodForm(payment.id).itemName}
+                            onChange={(e) =>
+                              updateFoodForm(payment.id, "itemName", e.target.value)
+                            }
+                          />
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="Price"
+                            className="w-24 h-9"
+                            value={getFoodForm(payment.id).unitPrice}
+                            onChange={(e) =>
+                              updateFoodForm(payment.id, "unitPrice", e.target.value)
+                            }
+                          />
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="Qty"
+                            className="w-20 h-9"
+                            value={getFoodForm(payment.id).quantity}
+                            onChange={(e) =>
+                              updateFoodForm(payment.id, "quantity", e.target.value)
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => addFood(payment.id)}
+                            disabled={foodLoadingId === payment.id}
+                          >
+                            {foodLoadingId === payment.id ? "Adding..." : "+ Add"}
+                          </Button>
+                        </div>
+
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })}
+
+            </div>
+          )}
+
+        </div>
       </div>
     </AppShell>
   );

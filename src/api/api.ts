@@ -1,7 +1,7 @@
 export interface BackendPC {
   pcId: string;
   connected: boolean;
-  status: "active" | "locked";
+  status: "active" | "locked" | "starting" | "offline";
   endTime: string | null;
 }
 

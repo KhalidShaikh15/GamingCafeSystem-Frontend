@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Gamepad2, RefreshCw, MonitorOff, SearchX } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { AppShell } from "@/components/layout/AppShell";
@@ -57,6 +58,11 @@ function GamingPCsPage() {
     refresh,
   } = useGamingPcs();
 
+  // Local-only UI feedback for the Refresh button. Does not alter refresh()
+  // itself or the hook's own loading semantics — just wraps the existing
+  // call so the button can show a spinner while it resolves.
+  const [refreshing, setRefreshing] = useState(false);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedPc, setSelectedPc] = useState<PC | null>(null);
 
@@ -86,6 +92,27 @@ function GamingPCsPage() {
         ? new Date(pc.endTime)
         : null,
     }));
+
+  // Derived purely from the real backendPcs feed — no invented figures.
+  const statusCounts = {
+    all: backendPcs.length,
+    active: backendPcs.filter((pc) => pc.status === "active").length,
+    locked: backendPcs.filter((pc) => pc.status === "locked").length,
+    starting: backendPcs.filter((pc) => pc.status === "starting").length,
+    offline: backendPcs.filter((pc) => pc.status === "offline").length,
+  };
+
+  const hasAnyPcs = backendPcs.length > 0;
+  const hasFilteredResults = pcs.length > 0;
+
+  const handleRefreshClick = async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const openStartModal = (pc: PC) => {
     setModalPC(pc);
@@ -271,92 +298,173 @@ function GamingPCsPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
-
-        {/* Header */}
-
-        <div className="flex items-center justify-between gap-4">
-
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Gaming PCs
-            </h1>
-
-            <p className="text-muted-foreground mt-1">
-              Control every station in real time
-            </p>
-          </div>
-
+      <div className="relative isolate">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div
+            className="absolute -top-28 -left-20 h-96 w-96 rounded-full opacity-25 blur-3xl"
+            style={{ background: "radial-gradient(circle, var(--primary) 0%, transparent 70%)" }}
+          />
+          <div
+            className="absolute top-20 -right-24 h-[28rem] w-[28rem] rounded-full opacity-20 blur-3xl"
+            style={{ background: "radial-gradient(circle, oklch(0.55 0.2 300) 0%, transparent 70%)" }}
+          />
+          <div
+            className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full opacity-[0.12] blur-3xl"
+            style={{ background: "radial-gradient(circle, var(--success) 0%, transparent 70%)" }}
+          />
         </div>
 
-        {/* Filters + Actions */}
+        <div className="space-y-7">
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Header */}
 
-          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+          <div className="flex items-center justify-between gap-4">
 
-            {FILTERS.map((filterOption) => (
-              <button
-                key={filterOption.key}
-                onClick={() =>
-                  setFilter(filterOption.key)
-                }
-                className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                  filter === filterOption.key
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl grid place-items-center border border-primary/30 bg-primary/10 text-primary shrink-0">
+                <Gamepad2 className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h1 className="text-3xl font-display font-bold tracking-tight leading-none">
+                  Gaming PCs
+                </h1>
+
+                <p className="text-muted-foreground mt-1.5 text-sm">
+                  Control every station in real time
+                  {hasAnyPcs && (
+                    <>
+                      {" "}· <span className="tabular-nums font-medium text-foreground">{statusCounts.all}</span> station{statusCounts.all === 1 ? "" : "s"}
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Filters + Actions */}
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+
+            <div className="flex items-center gap-1 rounded-lg border border-border glass-surface p-1 flex-wrap">
+
+              {FILTERS.map((filterOption) => (
+                <button
+                  key={filterOption.key}
+                  onClick={() =>
+                    setFilter(filterOption.key)
+                  }
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1.5",
+                    filter === filterOption.key
+                      ? "bg-primary text-primary-foreground shadow-[0_0_12px_-2px_var(--primary)]"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {filterOption.label}
+                  <span
+                    className={cn(
+                      "text-[10px] tabular-nums px-1.5 py-0.5 rounded",
+                      filter === filterOption.key
+                        ? "bg-primary-foreground/20"
+                        : "bg-border/60"
+                    )}
+                  >
+                    {statusCounts[filterOption.key]}
+                  </span>
+                </button>
+              ))}
+
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshClick}
+                disabled={refreshing || loading}
               >
-                {filterOption.label}
-              </button>
-            ))}
+                <RefreshCw className={cn("h-4 w-4", (refreshing || loading) && "animate-spin")} />
+                Refresh
+              </Button>
+
+            </div>
 
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Gaming PCs */}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refresh}
-            >
-              Refresh
-            </Button>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="glass-surface rounded-xl border border-border p-5 flex flex-col gap-4 h-[220px] animate-pulse"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-border/60" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-16 rounded bg-border/60" />
+                        <div className="h-2.5 w-20 rounded bg-border/40" />
+                      </div>
+                    </div>
+                    <div className="h-5 w-16 rounded bg-border/50" />
+                  </div>
+                  <div className="h-px w-full bg-border/40" />
+                  <div className="h-9 w-full rounded-lg bg-border/40" />
+                  <div className="grid grid-cols-2 gap-2 mt-auto">
+                    <div className="h-8 rounded-md bg-border/40" />
+                    <div className="h-8 rounded-md bg-border/40" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !hasAnyPcs ? (
+            <div className="glass-surface border border-border rounded-xl px-6 py-16 flex flex-col items-center text-center gap-3">
+              <div className="h-14 w-14 rounded-xl grid place-items-center border border-border bg-background/40 text-muted-foreground">
+                <MonitorOff className="h-6 w-6" />
+              </div>
+              <h2 className="font-display font-bold text-lg">No PCs configured yet</h2>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Once gaming stations are added to your cafe, they'll appear here for you to monitor and control.
+              </p>
+            </div>
+          ) : !hasFilteredResults ? (
+            <div className="glass-surface border border-border rounded-xl px-6 py-16 flex flex-col items-center text-center gap-3">
+              <div className="h-14 w-14 rounded-xl grid place-items-center border border-border bg-background/40 text-muted-foreground">
+                <SearchX className="h-6 w-6" />
+              </div>
+              <h2 className="font-display font-bold text-lg">No PCs match this filter</h2>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                No stations are currently in the "{FILTERS.find((f) => f.key === filter)?.label}" state.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setFilter("all")}>
+                Show all stations
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
-            <Button size="sm">
-              Broadcast Message
-            </Button>
+              {pcs.map((pc) => (
+                <PCCard
+                  key={pc.id}
+                  pc={pc}
+                  onStart={openStartModal}
+                  onExtend={openExtendModal}
+                  onEnd={handleEndSession}
+                  onRestart={handleRestart}
+                  onShutdown={handleShutdown}
+                  onWake={handleWake}
+                />
+              ))}
 
-          </div>
+            </div>
+          )}
 
         </div>
-
-        {/* Gaming PCs */}
-
-        {loading ? (
-          <div className="text-center py-10 text-muted-foreground">
-            Loading PCs...
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-
-            {pcs.map((pc) => (
-              <PCCard
-                key={pc.id}
-                pc={pc}
-                onStart={openStartModal}
-                onExtend={openExtendModal}
-                onEnd={handleEndSession}
-                onRestart={handleRestart}
-                onShutdown={handleShutdown}
-                onWake={handleWake}
-              />
-            ))}
-
-          </div>
-        )}
-
       </div>
 
       {/* Start Session */}
